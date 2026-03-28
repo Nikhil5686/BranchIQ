@@ -75,6 +75,11 @@ export const getMe = async () => {
   return res.data;
 };
 
+export const updateProfile = async (data) => {
+  const res = await api.patch("/api/auth/profile", data);
+  return res.data;
+};
+
 export const requestATMPinOTP = async () => {
   const res = await api.post("/api/auth/request-atm-pin-otp");
   return res.data;

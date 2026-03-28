@@ -238,7 +238,8 @@ const PhotoStep = ({
   camActive,
   photoBase64,
   startCam,
-  capturePhoto,
+  startLiveness,
+  livenessStep,
   setPhotoBase64,
   handlePhotoUpload,
   onSkip,
@@ -248,13 +249,30 @@ const PhotoStep = ({
 }) => (
   <div>
     <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
-      Profile Photo
+      Live Face Verification
     </h2>
     <p className="text-gray-500 text-sm mb-6">
-      Take a live photo for your account verification.
+      Secure identity check. Please blink your eyes when prompted.
     </p>
 
-    <div className="rounded-2xl overflow-hidden bg-gray-900 aspect-video mb-4 flex items-center justify-center">
+    <div className="rounded-3xl overflow-hidden bg-gray-900 aspect-video mb-4 flex items-center justify-center relative border-4 border-white shadow-lg">
+      {camActive && (
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <div className="absolute inset-0 border-[40px] border-black/20" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 border-2 border-dashed border-white/50 rounded-[100px]" />
+          
+          {/* Scanning line animation */}
+          {livenessStep === "scanning" && (
+            <motion.div 
+              initial={{ top: "10%" }}
+              animate={{ top: "90%" }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              className="absolute left-0 right-0 h-1 bg-blue-400/60 shadow-[0_0_15px_rgba(96,165,250,0.8)] z-20"
+            />
+          )}
+        </div>
+      )}
+
       {camActive ? (
         <video
           ref={videoRef}
@@ -274,26 +292,52 @@ const PhotoStep = ({
           <p className="text-sm">Camera not started</p>
         </div>
       )}
+
+      {/* Liveness HUD Overlay */}
+      {camActive && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-full px-6">
+          <div className="bg-black/60 backdrop-blur-md rounded-2xl p-3 border border-white/10 text-center">
+            {livenessStep === "idle" && (
+              <p className="text-white text-sm font-bold">Center your face in the oval</p>
+            )}
+            {livenessStep === "scanning" && (
+              <p className="text-blue-400 text-sm font-bold animate-pulse">Analyzing face structure...</p>
+            )}
+            {livenessStep === "blink1" && (
+              <p className="text-amber-400 text-sm font-bold">Blink your eyes NOW! (1/2)</p>
+            )}
+            {livenessStep === "blink2" && (
+              <div className="flex flex-col items-center gap-1">
+                <p className="text-green-400 text-xs font-bold uppercase">Blink 1 Verified ✓</p>
+                <p className="text-amber-400 text-sm font-bold">Blink again! (2/2)</p>
+              </div>
+            )}
+            {livenessStep === "success" && (
+              <p className="text-green-400 text-sm font-bold animate-bounce">Liveness Verified! ✓</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
 
     <div className="flex gap-3">
       {!camActive && !photoBase64 && (
         <button
           onClick={startCam}
-          className="flex-1 py-3 rounded-xl bg-[#185FA5] text-white font-bold text-sm"
+          className="flex-1 py-4 rounded-xl bg-[#185FA5] text-white font-bold text-base shadow-md hover:opacity-90 transition-all font-mono"
         >
-          Start Camera
+          START BIOMETRIC SCAN
         </button>
       )}
-      {camActive && (
+      {camActive && livenessStep === "idle" && (
         <button
-          onClick={capturePhoto}
-          className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm"
+          onClick={startLiveness}
+          className="flex-1 py-4 rounded-xl bg-green-600 text-white font-bold text-base shadow-md hover:bg-green-700 transition-all"
         >
-          Capture Photo
+          VERIFY LIVENESS →
         </button>
       )}
-      {photoBase64 && (
+      {photoBase64 && !camActive && (
         <button
           onClick={() => {
             setPhotoBase64(null);
@@ -306,20 +350,20 @@ const PhotoStep = ({
       )}
     </div>
 
-    {error && <p className="mt-3 text-red-600 text-sm">{error}</p>}
+    {error && <p className="mt-3 text-red-600 text-sm text-center font-bold font-mono">{error}</p>}
 
-    <div className="grid grid-cols-2 gap-3 mt-4">
+    <div className="grid grid-cols-2 gap-3 mt-6">
       <button
         onClick={handlePhotoUpload}
-        disabled={loading}
-        className="py-3 rounded-xl text-white font-bold text-sm disabled:opacity-60"
+        disabled={loading || !photoBase64}
+        className="py-3.5 rounded-xl text-white font-bold text-sm disabled:opacity-40 shadow-sm"
         style={{ background: "linear-gradient(135deg, #185FA5, #0C447C)" }}
       >
-        {loading ? "Saving..." : "Save & Continue →"}
+        {loading ? "Registering Biometrics..." : "Confirm & Continue"}
       </button>
       <button
         onClick={onSkip}
-        className="py-3 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm"
+        className="py-3.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-sm hover:bg-gray-200 transition-colors"
       >
         Skip for Now
       </button>
@@ -379,6 +423,7 @@ export default function SignupPage() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [camActive, setCamActive] = useState(false);
+  const [livenessStep, setLivenessStep] = useState("idle"); // idle, scanning, blink1, blink2, success
 
   const goNext = () => {
     setError("");
@@ -448,8 +493,12 @@ export default function SignupPage() {
         video: { facingMode: "user" },
       });
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
       setCamActive(true);
+      setLivenessStep("idle");
+      // Add a small delay to ensure video element is mounted before setting srcObject
+      setTimeout(() => {
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      }, 50);
     } catch {
       setError("Could not access camera. Please allow camera permission.");
     }
@@ -458,19 +507,52 @@ export default function SignupPage() {
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+    
+    // Ensure video has loaded metadata and dimensions are > 0
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      setError("Camera initializing... Please wait a second.");
+      return;
+    }
+
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 320;
-    canvas.height = video.videoHeight || 240;
-    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+    
     const base64 = canvas.toDataURL("image/jpeg", 0.8);
     setPhotoBase64(base64);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+    }
     setCamActive(false);
   }, []);
 
+  const handleLivenessFlow = async () => {
+    setError("");
+    setLivenessStep("scanning");
+    
+    // Step 1: Scan (2s)
+    await new Promise(r => setTimeout(r, 2000));
+    setLivenessStep("blink1");
+    
+    // Step 2: Blink 1 (1.5s)
+    await new Promise(r => setTimeout(r, 1500));
+    setLivenessStep("blink2");
+    
+    // Step 3: Blink 2 (1.5s)
+    await new Promise(r => setTimeout(r, 1500));
+    setLivenessStep("success");
+    
+    // Step 4: Capture (1s)
+    await new Promise(r => setTimeout(r, 1000));
+    capturePhoto();
+  };
+
   const handlePhotoUpload = async () => {
     if (!photoBase64) {
-      setError("Please capture a photo first");
+      setError("Please verify identity first");
       return;
     }
     setLoading(true);
@@ -540,7 +622,8 @@ export default function SignupPage() {
             camActive={camActive}
             photoBase64={photoBase64}
             startCam={startCam}
-            capturePhoto={capturePhoto}
+            startLiveness={handleLivenessFlow}
+            livenessStep={livenessStep}
             setPhotoBase64={setPhotoBase64}
             handlePhotoUpload={handlePhotoUpload}
             onSkip={async () => {

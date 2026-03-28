@@ -2,6 +2,7 @@ import random
 import string
 from datetime import datetime, timezone
 from typing import Optional
+from bson import ObjectId
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -22,6 +23,7 @@ from app.schemas.user import (
     TokenResponse,
     UserCreate,
     UserOut,
+    UserUpdate,
 )
 
 router = APIRouter()
@@ -228,3 +230,21 @@ async def set_atm_pin(
         {"user_id": current_user.id}, {"$set": {"atm_pin_hash": pin_hash}}
     )
     return {"message": "ATM PIN set successfully"}
+
+
+@router.patch("/auth/profile", response_model=UserOut)
+async def update_profile(
+    data: UserUpdate, current_user: UserOut = Depends(get_current_user)
+):
+    """Update current user's profile database entry."""
+    db = await get_db()
+    update_data = data.model_dump(exclude_unset=True)
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    await db.users.update_one({"_id": ObjectId(current_user.id)}, {"$set": update_data})
+
+    updated_user = await db.users.find_one({"_id": ObjectId(current_user.id)})
+    updated_user["id"] = str(updated_user["_id"])
+    return UserOut(**updated_user)

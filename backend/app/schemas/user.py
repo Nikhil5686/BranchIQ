@@ -61,3 +61,10 @@ class PhotoUpload(BaseModel):
 class ATMPinSet(BaseModel):
     otp_code: str
     new_pin: str = Field(..., min_length=4, max_length=4, pattern=r"^\d{4}$")
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    profile_photo: Optional[str] = None
