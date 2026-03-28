@@ -1,0 +1,6 @@
+Listing all users from database:
+- user0@example.com (Role: customer)
+- user1@example.com (Role: customer)
+- user2@example.com (Role: customer)
+- user3@example.com (Role: customer)
+- user4@example.com (Role: customer)

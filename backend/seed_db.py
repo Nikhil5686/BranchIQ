@@ -7,9 +7,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 # Ensure local app imports work
 sys.path.insert(0, '.')
+from app.core.config import settings
 from app.core.security import get_password_hash
 
-MONGO_URI = "mongodb+srv://rajn5686_db_user:Nikhil5686@nikhil5686.kcs0kd5.mongodb.net/branchiq?retryWrites=true&w=majority&appName=nikhil5686"
+MONGO_URI = settings.MONGODB_URL
 DB_NAME = "branchiq"
 
 LANGUAGES = ["en", "hi", "gu", "ta", "te", "mr"]
@@ -39,10 +40,11 @@ async def seed_database():
     print("Cleared all collections.")
 
     # ─── Admin User ─────────────────────────────────────────────────────────────
-    admin_pw = get_password_hash("Nikhil@12345")
+    admin_email = settings.admin_email_list[0]
+    admin_pw = get_password_hash(settings.ADMIN_DEFAULT_PASSWORD)
     admin_result = await db.users.insert_one({
         "name": "Nikhil Shukla",
-        "email": "nikhilshukla5686@gmail.com",
+        "email": admin_email,
         "hashed_password": admin_pw,
         "role": "admin",
         "phone": "+91-9999999999",
@@ -66,7 +68,7 @@ async def seed_database():
         "status": "active",
         "created_at": datetime.now(timezone.utc),
     })
-    print(f"Admin user created: nikhilshukla5686@gmail.com / Nikhil@12345")
+    print(f"Admin user created: {admin_email} / {settings.ADMIN_DEFAULT_PASSWORD}")
 
     # ─── Test Customers ──────────────────────────────────────────────────────────
     customer_pw = get_password_hash("password123")
@@ -171,7 +173,7 @@ async def seed_database():
     print(f"Created {len(txs)} transactions.")
 
     print("\n--- SEED COMPLETE ---")
-    print(f"Admin Login  : nikhilshukla5686@gmail.com / Nikhil@12345")
+    print(f"Admin Login  : {admin_email} / {settings.ADMIN_DEFAULT_PASSWORD}")
     print(f"User Login   : priya@example.com / password123")
     print(f"DB           : {DB_NAME}")
 

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     # Admin settings
     ADMIN_EMAILS: str = "nikhilshukla5686@gmail.com"
+    ADMIN_DEFAULT_PASSWORD: str = "Nikhil@12345"
     ADMIN_INVITE_TOKEN: str = "BRANCHIQ-ADMIN-2024"  # Override in .env
 
     @property
