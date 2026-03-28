@@ -37,6 +37,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Debug Middleware to capture and return errors in production 500 responses
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    import traceback
+
+    error_msg = str(exc)
+    error_type = type(exc).__name__
+    stack = traceback.format_exc()
+
+    print(f"\n[GLOBAL ERROR] {error_type}: {error_msg}")
+    print(stack)
+
+    return {
+        "detail": f"Production Debug Error: {error_type}: {error_msg}",
+        "stack": stack.split("\n")[-5:],  # Return just the last few lines of stack
+    }
+
 # Public + Auth routes
 app.include_router(auth_router, prefix="/api", tags=["Authentication"])
 

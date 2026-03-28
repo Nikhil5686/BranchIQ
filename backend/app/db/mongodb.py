@@ -9,7 +9,16 @@ db = client.branchiq
 
 async def init_db():
     """Create required indexes for all collections."""
+    print(f"\n[DEBUG DB] Initializing connection...")
+    safe_url = settings.MONGODB_URL.split("@")[-1] if "@" in settings.MONGODB_URL else settings.MONGODB_URL
+    print(f"[DEBUG DB] Target: {safe_url}")
+    print(f"[DEBUG DB] Database name: {db.name}")
+
     try:
+        # Check connection
+        await client.admin.command('ping')
+        print(f"[DEBUG DB] Success: Ping to MongoDB successful!")
+        
         # Queries collection
         await db.queries.create_index([("timestamp", pymongo.DESCENDING)])
         await db.queries.create_index([("language", pymongo.ASCENDING)])
