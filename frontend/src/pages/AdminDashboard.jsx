@@ -18,6 +18,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import ProfilePanel from "../components/ProfilePanel";
 
 const AnimatedNumber = ({ value }) => {
   const [displayValue, setDisplayValue] = useState(0);
@@ -159,6 +160,7 @@ export default function AdminDashboard() {
       label: `Requests ${adminStats ? `(${adminStats.pending_requests})` : ""}`,
     },
     { id: "users", label: `Users (${users.length})` },
+    { id: "profile", label: "Profile" },
   ];
 
   return (
@@ -580,6 +582,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      {activeTab === "profile" && <ProfilePanel />}
     </motion.div>
   );
 }
