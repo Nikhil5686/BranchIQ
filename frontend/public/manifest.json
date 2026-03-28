@@ -1,0 +1,28 @@
+{
+  "name": "BranchIQ Banking",
+  "short_name": "BranchIQ",
+  "description": "AI-powered self-service banking assistant",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#185FA5",
+  "background_color": "#F4F8FD",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business"],
+  "screenshots": [],
+  "lang": "en-IN"
+}
