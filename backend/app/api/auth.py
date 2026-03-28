@@ -175,17 +175,45 @@ async def upload_photo(data: PhotoUpload):
 @router.post("/auth/login", response_model=TokenResponse)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     db = await get_db()
-    user_data = await db.users.find_one({"email": form_data.username})
+    
+    print(f"\n--- DEBUG LOGIN START ---")
+    print(f"Attempting login for: {form_data.username}")
+    print(f"Database: {db.name}")
 
-    if not user_data or not verify_password(
-        form_data.password, user_data["hashed_password"]
-    ):
+    user_data = await db.users.find_one({"email": form_data.username})
+    
+    if not user_data:
+        print(f"[DEBUG] User NOT found in database: {form_data.username}")
+        raise HTTPException(status_code=400, detail="Incorrect email or password")
+        
+    print(f"[DEBUG] User found in database: {user_data['email']}")
+    print(f"[DEBUG] User Role: {user_data.get('role')}")
+
+    if not verify_password(form_data.password, user_data["hashed_password"]):
+        print(f"[DEBUG] Password verification FAILED for user: {form_data.username}")
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 
-    user_data["id"] = str(user_data["_id"])
-    access_token = create_access_token(data={"sub": user_data["email"]})
+    print(f"[DEBUG] Password verification SUCCESSFUL")
 
-    return TokenResponse(access_token=access_token, user=UserOut(**user_data))
+    user_data["id"] = str(user_data["_id"])
+    
+    try:
+        access_token = create_access_token(data={"sub": user_data["email"]})
+        print(f"[DEBUG] Token generated successfully")
+    except Exception as e:
+        print(f"[DEBUG] ERROR generating access token: {e}")
+        raise HTTPException(status_code=500, detail="Error generating access token")
+
+    print(f"--- DEBUG LOGIN SUCCESS ---")
+    try:
+        response = TokenResponse(access_token=access_token, user=UserOut(**user_data))
+        print(f"[DEBUG] Response schema validation successful")
+        return response
+    except Exception as e:
+        print(f"[DEBUG] ERROR validating output schema (UserOut): {e}")
+        # Print actual user_data keys to see what's missing
+        print(f"[DEBUG] user_data keys: {list(user_data.keys())}")
+        raise HTTPException(status_code=500, detail="Error formatting user data for response")
 
 
 @router.get("/auth/me", response_model=UserOut)
